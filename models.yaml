@@ -1,0 +1,11 @@
+Models:
+  - name: 'Puntos sencillos'
+    version: 0.1
+    info: 'Este modelo sirve para cultivos que producen puntitos sencillos como el hongo marianus o el bacile de marta.'
+    img: '/home/commodoro/Documentos/clases/vision/proyectoFinal/doc/petri.png'
+    alg_path: './algorithms/points.py'
+  - name: 'Otro modelo'
+    version: 0.1
+    info: 'Este es otro modelo, es más bonito'
+    img: '/home/commodoro/Documentos/clases/vision/proyectoFinal/doc/gato.jpg'
+    alg_path: './algorithms/wow.py'
