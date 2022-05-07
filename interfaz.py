@@ -6,6 +6,7 @@ import cv2
 import os
 from time import strftime
 import model
+import rasp
 
 
 class Fonts:
