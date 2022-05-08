@@ -141,6 +141,20 @@ class App(tk.Frame, Fonts):
         self.panel.place(x=10, y=10)
         self.capture()
 
+        # Control de brillo
+        self.bripanel = tk.Frame(self.main_frame)
+        self.bripanel.config(width=600, height=50)
+        self.bri_lv = tk.DoubleVar()
+        self.bri_lv.set(0.8)
+        self.bri_handler = rasp.Light()
+        self.bri_handler.turn_on()
+        self.bri_handler.level(self.bri_lv.get())
+        self.briscale = tk.Scale(self.bripanel, from_=0, to=1, command=self.pass_bri,
+                                 orient='horizontal', length=600, resolution=0.01, variable=self.bri_lv,
+                                 showvalue=False, width=30, relief='raised', cursor='cross_reverse')
+        self.briscale.pack()
+
+
     def capture(self):
         ok, frame = self.vs.read()
         if ok:
@@ -203,6 +217,7 @@ class App(tk.Frame, Fonts):
 
     def optb1(self, event=None):
         print('Brightness control')
+        self.show_brightness()
 
     def optb2(self, event=None):
         print('Options')
@@ -215,11 +230,17 @@ class App(tk.Frame, Fonts):
 
     def disable_frame(self):
         for child in self.main_frame.winfo_children():
-            child.configure(state='disable')
+            try:
+                child.configure(state='disable')
+            except:
+                pass
 
     def enable_frame(self, event=None):
         for child in self.main_frame.winfo_children():
-            child.configure(state='normal')
+            try:
+                child.configure(state='normal')
+            except:
+                pass
 
     def menu_options(self):
         self.disable_frame()
@@ -229,6 +250,17 @@ class App(tk.Frame, Fonts):
         self.options_windows.bind('<Destroy>', self.enable_frame)
         self.secondary_frame = MenuOptions(self.options_windows)
 
+    def show_brightness(self):
+        self.bripanel.place(x=(800-600)/2,y=400)
+        self.britemp = self.main_frame.after(3000, self.hide_brightness)
+
+    def hide_brightness(self):
+        self.bripanel.place_forget()
+
+    def pass_bri(self, lv: float):
+        self.bri_handler.level(lv)
+        self.main_frame.after_cancel(self.britemp)
+        self.britemp = self.main_frame.after(3000, self.hide_brightness)
 
 class InfoPanel(tk.Frame, Fonts):
     def __init__(self, master, model_h):
