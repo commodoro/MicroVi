@@ -122,7 +122,6 @@ class App(tk.Frame, Fonts):
                                  highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.modelb3)
         self.train_b.place(x=690, y=105)
         self.train_b.configure(state='disable')
-        #self.train_b.bind('<Button-1>', self.modelb3)
 
         self.count_b = tk.Button(self.main_frame, text="Contar", height=2, highlightbackground=self.emph_color,
                                  font=self.count_font, width=7, highlightthickness=2, fg=self.emph_color,
@@ -214,12 +213,11 @@ class App(tk.Frame, Fonts):
 
     def modelb3(self):
         print('Train model')
-        # model.train_model()
 
     def countb1(self, event=None):
         print('Count', self.ntext.get())
         self.ntext.set(int(self.ntext.get())+1)
-        self.recuentotext.set(randint(50, 10000))
+        self.recuentotext.set(self.model_handler.compute(self.cv2image))
         if self.app_options.save_img:
             img = cv2.cvtColor(self.cv2image, cv2.COLOR_BGR2RGB)
             path = pathlib.Path(self.app_options.save_img_path).expanduser()

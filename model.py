@@ -1,6 +1,7 @@
 import sys
+from cv2 import Mat
 import yaml
-
+from importlib.machinery import SourceFileLoader
 
 class ModelHandler:
     def __init__(self, conf_route: str):
@@ -20,6 +21,8 @@ class ModelHandler:
         self.n = 0
         if self.valid:
             self.change_model(self.n)
+            self.source = SourceFileLoader('Modelo', self.current_model['alg_path'])
+            self.module = self.source.load_module()
         else:
             self.current_model = {'name' : 'Error with Model Handler'}
 
@@ -37,6 +40,12 @@ class ModelHandler:
 
     def get_model(self):
         return self.current_model.copy()
+
+    def compute(self, img: Mat) -> int:
+        if self.source.path != self.current_model['alg_path']:
+            self.source = SourceFileLoader('Modelo', self.current_model['alg_path'])
+            self.module = self.source.load_module()
+        return self.module.count(img)
 
     def __getitem__(self, key):
         return self.current_model[key]
