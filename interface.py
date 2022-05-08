@@ -358,16 +358,3 @@ class MenuOptions(tk.Frame, Fonts):
     def modify_img_path(self, event):
         self.options.save_img_path = self.img_path.get()
 
-        
-
-
-app_path = os.path.dirname(os.path.abspath(__file__))
-
-root = tk.Tk()
-root.tk.call('wm', 'iconphoto', root._w, tk.PhotoImage(
-    file=app_path+'/petri_icon.png'))
-
-mh = model.ModelHandler('models.yaml')
-
-app = App(root, mh)
-app.mainloop()
