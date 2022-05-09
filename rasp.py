@@ -8,7 +8,7 @@ try:
             self.pwm = gpiozero.PWMLED(self.PIN_LED, frequency=1000)
         
         def level(self, lv: float):
-            self.pwm.value = lv
+            self.pwm.value = float(lv)
 
         def turn_off(self):
             self.pwm.off()
