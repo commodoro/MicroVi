@@ -46,8 +46,8 @@ class App(tk.Frame, Fonts):
         self.master = master
         self.master.title('MicroVi')
 
-        self.master.bind("<F11>", lambda event: root.attributes("-fullscreen",
-                                                                not root.attributes("-fullscreen")))
+        self.master.bind("<F11>", lambda event: self.master.attributes("-fullscreen",
+                                                                not self.master.attributes("-fullscreen")))
         master.attributes("-fullscreen", True)
         self.master.geometry("800x480+0+0")
 
