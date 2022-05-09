@@ -5,6 +5,7 @@ import tkinter.font as tkfont
 from PIL import ImageTk, Image
 import cv2
 import os
+import os.path
 from time import strftime
 import model
 import rasp
@@ -221,6 +222,9 @@ class App(tk.Frame, Fonts):
         if self.app_options.save_img:
             img = cv2.cvtColor(self.cv2image, cv2.COLOR_BGR2RGB)
             path = pathlib.Path(self.app_options.save_img_path).expanduser()
+            if not os.path.exists(str(path)):
+                os.makedirs(str(path))
+            print(os.path.join(str(path),f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), file=stderr)
             if not cv2.imwrite(os.path.join(str(path),f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), img):
                 print("Error guardando la imagen", file=stderr)
             
