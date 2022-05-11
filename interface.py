@@ -1,4 +1,3 @@
-from random import randint
 from sys import stderr
 import tkinter as tk
 import tkinter.font as tkfont
@@ -7,16 +6,34 @@ import cv2
 import os
 import os.path
 from time import strftime
+import yaml
 import model
 import rasp
-from dataclasses import dataclass
+from dataclasses import Field, dataclass
 import pathlib
 
+
 @dataclass
-class AppOptions:
-    save_img_path: str
-    save_img: bool
-    
+class AppSettings:
+    save_img_path: str = ''
+    save_img: bool = ''
+    tpu : bool = False
+    pwm_pin : int = 17
+    pwm_logic : bool = False
+    spreadsheet_id : str = ''
+
+
+def read_settings() -> AppSettings:
+    with open('settings.yaml', 'r') as file_yaml:
+        data = yaml.safe_load(file_yaml)
+    for key in data.keys():
+        assert key in AppSettings.__annotations__.keys(), 'El archivo de configuración contiene valores incorrectos'
+    return AppSettings(**data)
+
+def write_settings(opts: AppSettings) -> None:
+    assert isinstance(opts, AppSettings)
+    with open('settings.yaml', 'w') as file_yaml:
+        file_yaml.write(yaml.safe_dump(opts.__dict__))
 
 class Fonts:
     def __init__(self, master) -> None:
@@ -39,6 +56,7 @@ class Fonts:
             self.master, size=12, family='Liberation Sans')
         self.emph_color = '#355269'
 
+
 class App(tk.Frame, Fonts):
     def __init__(self, master: tk.Tk, modelh: model.ModelHandler):
         super().__init__(master)
@@ -47,7 +65,7 @@ class App(tk.Frame, Fonts):
         self.master.title('MicroVi')
 
         self.master.bind("<F11>", lambda event: self.master.attributes("-fullscreen",
-                                                                not self.master.attributes("-fullscreen")))
+                                                                       not self.master.attributes("-fullscreen")))
         master.attributes("-fullscreen", True)
         self.master.geometry("800x480+0+0")
 
@@ -56,7 +74,7 @@ class App(tk.Frame, Fonts):
         self.main_frame.config(width=800, height=480)
 
         # Opciones de la App
-        self.app_options = AppOptions('~/MicroVi/', False)
+        self.app_options = AppSettings('~/MicroVi/', False)
 
         # Etiquetas y gráficos
 
@@ -106,21 +124,25 @@ class App(tk.Frame, Fonts):
 
         # Botones
         self.infomodel_b = tk.Button(self.main_frame, text="🛈", height=1,
-                                     highlightbackground=self.emph_color, font=self.info_font, width=1, highlightthickness=2, command=self.info_model)
+                                     highlightbackground=self.emph_color, font=self.info_font, width=1,
+                                     highlightthickness=2, command=self.info_model)
         self.infomodel_b.place(x=745, y=52)
 
         self.selmodel_b = tk.Button(self.main_frame, text="Cambiar", height=1, width=8,
-                                    highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.modelb1)
+                                    highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2,
+                                    fg=self.emph_color, command=self.modelb1)
         self.selmodel_b.place(x=470, y=105)
 
         self.lockmodel_b_txt = tk.StringVar(self.main_frame, 'Marcar')
         self.lockmodel_b = tk.Button(self.main_frame, textvariable=self.lockmodel_b_txt, height=1, width=8,
-                                     highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.modelb2)
+                                     highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2,
+                                     fg=self.emph_color, command=self.modelb2)
         self.lockmodel_b.place(x=580, y=105)
         self.lockmodel = False
 
         self.train_b = tk.Button(self.main_frame, text="Entrenar", height=1, width=8,
-                                 highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.modelb3)
+                                 highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2,
+                                 fg=self.emph_color, command=self.modelb3)
         self.train_b.place(x=690, y=105)
         self.train_b.configure(state='disable')
 
@@ -130,19 +152,23 @@ class App(tk.Frame, Fonts):
         self.count_b.place(x=470, y=200)
 
         self.autocount_b = tk.Button(self.main_frame, text="Auto", height=2, highlightbackground=self.emph_color,
-                                     font=self.txt4_font, width=8, highlightthickness=2, fg=self.emph_color, command=self.countb2)
+                                     font=self.txt4_font, width=8, highlightthickness=2, fg=self.emph_color,
+                                     command=self.countb2)
         self.autocount_b.place(x=665, y=200)
 
         self.bri_b = tk.Button(self.main_frame, text="Brillo", height=1, width=8,
-                               highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.optb1)
+                               highlightbackground=self.emph_color, font=self.txt2_font,
+                               highlightthickness=2, fg=self.emph_color, command=self.optb1)
         self.bri_b.place(x=470, y=415)
 
         self.opt_b = tk.Button(self.main_frame, text="Opciones", height=1, width=8,
-                               highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.optb2)
+                               highlightbackground=self.emph_color, font=self.txt2_font,
+                               highlightthickness=2, fg=self.emph_color, command=self.optb2)
         self.opt_b.place(x=580, y=415)
 
         self.reset_b = tk.Button(self.main_frame, text="Reset", height=1, width=8,
-                                 highlightbackground=self.emph_color, font=self.txt2_font, highlightthickness=2, fg=self.emph_color, command=self.optb3)
+                                 highlightbackground=self.emph_color, font=self.txt2_font,
+                                 highlightthickness=2, fg=self.emph_color, command=self.optb3)
         self.reset_b.place(x=690, y=415)
 
         # Captura continua
@@ -224,10 +250,11 @@ class App(tk.Frame, Fonts):
             path = pathlib.Path(self.app_options.save_img_path).expanduser()
             if not os.path.exists(str(path)):
                 os.makedirs(str(path))
-            print(os.path.join(str(path),f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), file=stderr)
-            if not cv2.imwrite(os.path.join(str(path),f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), img):
+            print(os.path.join(
+                str(path), f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), file=stderr)
+            if not cv2.imwrite(os.path.join(str(path), f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), img):
                 print("Error guardando la imagen", file=stderr)
-            
+
     def countb2(self, event=None):
         print('Auto mode')
 
@@ -264,7 +291,8 @@ class App(tk.Frame, Fonts):
         self.options_windows.geometry("800x480+0+0")
         self.options_windows.attributes("-fullscreen", True)
         self.options_windows.bind('<Destroy>', self.enable_frame)
-        self.secondary_frame = MenuOptions(self.options_windows, self.app_options)
+        self.secondary_frame = MenuOptions(
+            self.options_windows, self.app_options)
 
     def show_brightness(self):
         self.bripanel.place(x=(800-600)/2, y=400)
@@ -319,7 +347,7 @@ class InfoPanel(tk.Frame, Fonts):
 
 
 class MenuOptions(tk.Frame, Fonts):
-    def __init__(self, master: tk.Frame, options: AppOptions):
+    def __init__(self, master: tk.Frame, options: AppSettings):
         super().__init__(master)
         Fonts.__init__(self, master)
         self.master = master
@@ -333,23 +361,26 @@ class MenuOptions(tk.Frame, Fonts):
                                         highlightthickness=2, fg=self.emph_color, command=self.master.destroy)
         self.exit_options_b.place(x=10, y=10)
 
-        self.images_frame = tk.LabelFrame(self, text='Imágenes', font=self.txt4_font)
-        self.images_frame.place(x=60, y = 60)
+        self.images_frame = tk.LabelFrame(
+            self, text='Imágenes', font=self.txt4_font)
+        self.images_frame.place(x=60, y=60)
         self.images_frame.config(width=740, height=130)
 
         self.img_save_var = tk.BooleanVar(self, self.options.save_img)
-        self.img_save_check = tk.Checkbutton(self.images_frame,text='Guardar imágenes', font=self.txt5_font,
+        self.img_save_check = tk.Checkbutton(self.images_frame, text='Guardar imágenes', font=self.txt5_font,
                                              command=self.image_save, variable=self.img_save_var, height=3, width=20)
         self.img_save_check.place(x=0, y=0)
 
-        self.img_path_label = tk.Label(self.images_frame, text='Ruta', font=self.txt5_font)
-        self.img_path_label.place(x=35, y = 60)
+        self.img_path_label = tk.Label(
+            self.images_frame, text='Ruta', font=self.txt5_font)
+        self.img_path_label.place(x=35, y=60)
         self.img_path = tk.StringVar(self, self.options.save_img_path)
-        self.img_path_entry = tk.Entry(self.images_frame, textvariable=self.img_path, font=self.txt5_font, width=60)
+        self.img_path_entry = tk.Entry(
+            self.images_frame, textvariable=self.img_path, font=self.txt5_font, width=60)
         if not self.options.save_img:
             self.img_path_entry.config(state='disable')
         self.img_path_entry.bind('<Key>', self.modify_img_path)
-        self.img_path_entry.place(x=85, y = 60)
+        self.img_path_entry.place(x=85, y=60)
         # etc.
 
     def image_save(self):
@@ -361,4 +392,3 @@ class MenuOptions(tk.Frame, Fonts):
 
     def modify_img_path(self, event):
         self.options.save_img_path = self.img_path.get()
-
