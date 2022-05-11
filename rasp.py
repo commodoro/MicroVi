@@ -1,20 +1,22 @@
 from sys import stderr
 
 try:
-    import gpiozero
+    import serial
     class Light:
-        PIN_LED = 17
+        lv : int = 0
         def __init__(self):
-            self.pwm = gpiozero.PWMLED(self.PIN_LED, frequency=1000)
+            self.uart = serial.Serial('/dev/ttyAMA0', 9600)
         
-        def level(self, lv: float):
-            self.pwm.value = 1-float(lv)
+        def level(self, lv: int):
+            print("Nivel: ", lv, bytes((self.lv,)))
+            self.lv = int(lv)
+            self.uart.write(bytes((self.lv,)))
 
         def turn_off(self):
-            self.pwm.off()
+            self.uart.write(b'\x00')
 
         def turn_on(self):
-            self.pwm.on()
+            self.uart.write(bytes((self.lv,)))
 except ImportError:
     print('Raspberry required for run', file=stderr)
     class Light:        

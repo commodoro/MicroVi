@@ -154,13 +154,13 @@ class App(tk.Frame, Fonts):
         # Control de brillo
         self.bripanel = tk.Frame(self.main_frame)
         self.bripanel.config(width=600, height=50)
-        self.bri_lv = tk.DoubleVar(self.main_frame)
-        self.bri_lv.set(0.8)
+        self.bri_lv = tk.IntVar(self.main_frame)
+        self.bri_lv.set(204)
         self.bri_handler = rasp.Light()
         self.bri_handler.turn_on()
         self.bri_handler.level(self.bri_lv.get())
-        self.briscale = tk.Scale(self.bripanel, from_=0, to=1, command=self.pass_bri,
-                                 orient='horizontal', length=600, resolution=0.01, variable=self.bri_lv,
+        self.briscale = tk.Scale(self.bripanel, from_=0, to=255, command=self.pass_bri,
+                                 orient='horizontal', length=600, resolution=1, variable=self.bri_lv,
                                  showvalue=False, width=30, relief='raised', cursor='cross_reverse')
         self.briscale.pack()
 
