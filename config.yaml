@@ -1,0 +1,4 @@
+save_img: false
+save_img_path: ~/MicroVi/
+spreadsheet_id: ''
+tpu: false

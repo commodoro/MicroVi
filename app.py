@@ -1,3 +1,5 @@
+#! /bin/libcamerify /bin/python3
+
 import interface
 import tkinter as tk
 import os

@@ -1,12 +1,18 @@
 from sys import stderr
+import subprocess
+import asyncio
 
 try:
+    import gpiozero
+    IS_RASPBERRY = True
     import serial
+
     class Light:
-        lv : int = 0
+        lv: int = 0
+
         def __init__(self):
             self.uart = serial.Serial('/dev/ttyAMA0', 9600)
-        
+
         def level(self, lv: int):
             print("Nivel: ", lv, bytes((self.lv,)))
             self.lv = int(lv)
@@ -19,7 +25,9 @@ try:
             self.uart.write(bytes((self.lv,)))
 except ImportError:
     print('Raspberry required for run', file=stderr)
-    class Light:        
+    IS_RASPBERRY = False
+
+    class Light:
         def level(self, lv: float):
             print("Light Level:", lv)
 

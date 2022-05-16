@@ -1,6 +1,7 @@
 from sys import stderr
 import tkinter as tk
 import tkinter.font as tkfont
+import numpy as np
 from PIL import ImageTk, Image
 import cv2
 import os
@@ -9,18 +10,34 @@ from time import strftime
 import yaml
 import model
 import rasp
-from dataclasses import Field, dataclass
+from dataclasses import dataclass
 import pathlib
 
 
 @dataclass
 class AppSettings:
-    save_img_path: str = ''
-    save_img: bool = ''
+    save_img_path: str = '~/MicroVi/'
+    save_img: bool = False
     tpu : bool = False
-    pwm_pin : int = 17
-    pwm_logic : bool = False
     spreadsheet_id : str = ''
+
+    @classmethod
+    def load_settings(cls, filename: str):
+        if not os.path.exists(filename):
+            with open(filename, 'w'):
+                pass
+            return cls()
+        with open(filename, 'r') as f:
+            values = yaml.safe_load(f)
+        if values is not None:
+            return cls(**values)
+        else:
+            return cls()
+
+    @classmethod
+    def save_settings(cls, settings, filename: str):
+        with open(filename, 'w') as f:
+            f.write(yaml.safe_dump(settings.__dict__))
 
 
 def read_settings() -> AppSettings:
@@ -66,15 +83,17 @@ class App(tk.Frame, Fonts):
 
         self.master.bind("<F11>", lambda event: self.master.attributes("-fullscreen",
                                                                        not self.master.attributes("-fullscreen")))
-        master.attributes("-fullscreen", True)
+        self.master.attributes("-fullscreen", True)
         self.master.geometry("800x480+0+0")
+        self.master.protocol("WM_DELETE_WINDOW", self.close)
 
         self.main_frame = tk.Frame(self.master, bd=4)
         self.main_frame.pack()
         self.main_frame.config(width=800, height=480)
 
-        # Opciones de la App
-        self.app_options = AppSettings('~/MicroVi/', False)
+        # Configuración de la App
+
+        self.app_options = AppSettings.load_settings('config.yaml')
 
         # Etiquetas y gráficos
 
@@ -123,7 +142,7 @@ class App(tk.Frame, Fonts):
         self.recuento_lab.place(x=470, y=325)
 
         # Botones
-        self.infomodel_b = tk.Button(self.main_frame, text="🛈", height=1,
+        self.infomodel_b = tk.Button(self.main_frame, text="i", height=1,
                                      highlightbackground=self.emph_color, font=self.info_font, width=1,
                                      highlightthickness=2, command=self.info_model)
         self.infomodel_b.place(x=745, y=52)
@@ -171,8 +190,10 @@ class App(tk.Frame, Fonts):
                                  highlightthickness=2, fg=self.emph_color, command=self.optb3)
         self.reset_b.place(x=690, y=415)
 
-        # Captura continua
         self.vs = cv2.VideoCapture(0)
+        self.vs.set(cv2.CAP_PROP_FRAME_WIDTH,2592)
+        self.vs.set(cv2.CAP_PROP_FRAME_HEIGHT,1944)
+
         self.panel = tk.Label(self.main_frame)
         self.panel.place(x=10, y=10)
         self.capture()
@@ -181,7 +202,7 @@ class App(tk.Frame, Fonts):
         self.bripanel = tk.Frame(self.main_frame)
         self.bripanel.config(width=600, height=50)
         self.bri_lv = tk.IntVar(self.main_frame)
-        self.bri_lv.set(204)
+        self.bri_lv.set(255)
         self.bri_handler = rasp.Light()
         self.bri_handler.turn_on()
         self.bri_handler.level(self.bri_lv.get())
@@ -190,16 +211,27 @@ class App(tk.Frame, Fonts):
                                  showvalue=False, width=30, relief='raised', cursor='cross_reverse')
         self.briscale.pack()
 
+    def close(self):
+        self.bri_handler.turn_off()
+        self.master.destroy()
+
+
+    def image_server_wd(self):
+        if rasp.ImageServer.poll() is not None:
+            raise RuntimeError('Servidor de imágenes detenido.')
+        self.main_frame.after(1000, self.image_server_wd)
+
     def capture(self):
         ok, frame = self.vs.read()
         if ok:
             self.cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-            self.current_image = Image.fromarray(self.cv2image)
-            self.current_image = self.current_image.crop((0, 0, 440, 440))
+            margX, margY = 400, 90
+            self.current_image = Image.fromarray(cv2.resize(self.cv2image[(margY-60):-margY,margX:-margX], (440,440)))
+            # self.current_image = self.current_image.crop((97, 13, 537, 453))
             self.imgtk = ImageTk.PhotoImage(image=self.current_image)
             self.panel.config(image=self.imgtk)
         # call the same function after 30 milliseconds
-        self.main_frame.after(30, self.capture)
+        self.main_frame.after(5, self.capture)
 
     def clock(self):
         self.time.set(strftime("%H:%M:%S, %d/%m/%Y"))
@@ -242,17 +274,23 @@ class App(tk.Frame, Fonts):
         print('Train model')
 
     def countb1(self, event=None):
-        print('Count', self.ntext.get())
+        # Realiza cuenta 
+        ret = self.model_handler.compute(self.cv2image)
+        self.recuentotext.set(ret)
+        
+        # Incrementa valor
         self.ntext.set(int(self.ntext.get())+1)
-        self.recuentotext.set(self.model_handler.compute(self.cv2image))
+        print('Count', self.ntext.get())
+        
+        # Guardar imagen
         if self.app_options.save_img:
             img = cv2.cvtColor(self.cv2image, cv2.COLOR_BGR2RGB)
             path = pathlib.Path(self.app_options.save_img_path).expanduser()
             if not os.path.exists(str(path)):
                 os.makedirs(str(path))
             print(os.path.join(
-                str(path), f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), file=stderr)
-            if not cv2.imwrite(os.path.join(str(path), f'{strftime("%H:%M:%S_%d-%m-%Y")}.jpg'), img):
+                str(path), f'{self.model_handler["name"]}-{self.ntext.get()}.jpg'), file=stderr)
+            if not cv2.imwrite(os.path.join(str(path), f'{self.model_handler["name"]}-{self.ntext.get()}.jpg'), img):
                 print("Error guardando la imagen", file=stderr)
 
     def countb2(self, event=None):

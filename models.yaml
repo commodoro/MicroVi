@@ -2,6 +2,21 @@ Models:
   - name: 'Puntos sencillos'
     version: 0.1
     info: 'Este modelo sirve para cultivos que producen puntitos sencillos como el hongo marianus o el bacile de marta.'
+    img: './gallery/MG-1438-35.jpg'
+    alg_path: './algorithms/points.py'
+  - name: 'MG-1438'
+    version: 0.1
+    info: 'Este modelo sirve para cultivos que producen puntitos sencillos como el hongo marianus o el bacile de marta.'
+    img: './gallery/BY-47-8.jpg'
+    alg_path: './algorithms/points.py'
+  - name: 'BY-47'
+    version: 0.1
+    info: 'Este modelo sirve para cultivos que producen puntitos sencillos como el hongo marianus o el bacile de marta.'
+    img: '/home/commodoro/Documentos/clases/vision/proyectoFinal/doc/petri.png'
+    alg_path: './algorithms/points.py'
+  - name: '168BC'
+    version: 0.1
+    info: 'Este modelo sirve para cultivos que producen puntitos sencillos como el hongo marianus o el bacile de marta.'
     img: '/home/commodoro/Documentos/clases/vision/proyectoFinal/doc/petri.png'
     alg_path: './algorithms/points.py'
   - name: 'Otro modelo'
